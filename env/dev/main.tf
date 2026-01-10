@@ -27,3 +27,24 @@ module "secrets" {
   source       = "../../modules/secrets"
   project_name = var.project_name
 }
+
+# MODULE 5: S3 Bucket (Artifacts)
+module "s3" {
+  source       = "../../modules/s3"
+  project_name = var.project_name
+  env          = "dev"
+}
+
+# MODULE 6: RDS Database (MySQL)
+module "rds" {
+  source       = "../../modules/rds"
+  project_name = var.project_name
+
+  # Network Connections (From VPC Module)
+  vpc_id = module.vpc.vpc_id
+  # We use DATA subnets for the Database layer
+  private_subnet_ids = module.vpc.data_subnet_ids
+
+  # Security Connection (From Secrets Module)
+  db_password = module.secrets.db_password_value
+}
