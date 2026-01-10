@@ -8,3 +8,9 @@ module "vpc" {
   data_subnets_cidr   = var.data_subnets_cidr
   availability_zones  = var.availability_zones
 }
+module "sg" {
+  source = "./modules/sg"
+
+  project_name = var.project_name
+  vpc_id       = module.vpc.vpc_id # <--- The magic link between modules
+}
