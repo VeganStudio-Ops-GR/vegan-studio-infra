@@ -1,4 +1,4 @@
-# 1. The Subnet Group (Where the DB lives)
+# 1. The Subnet Group
 resource "aws_db_subnet_group" "default" {
   name       = "${var.project_name}-db-subnet-group"
   subnet_ids = var.private_subnet_ids
@@ -8,43 +8,25 @@ resource "aws_db_subnet_group" "default" {
   }
 }
 
-# 2. Security Group (The Firewall)
-resource "aws_security_group" "rds_sg" {
-  name        = "${var.project_name}-rds-sg"
-  description = "Allow MySQL traffic from App"
-  vpc_id      = var.vpc_id
+# NOTE: No aws_security_group resource here! We removed it!
 
-  # Ingress: Allow traffic ONLY on port 3306
-  ingress {
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # In a real strict setup, we reference the App SG ID here.
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-# 3. The Database Instance
+# 2. The Database Instance
 resource "aws_db_instance" "default" {
   identifier        = "${var.project_name}-db"
   allocated_storage = 20
   storage_type      = "gp2"
   engine            = "mysql"
-  engine_version    = "8.0" # Or 5.7 depending on your app requirement
+  engine_version    = "8.0"
   instance_class    = "db.t3.micro"
   username          = "admin"
-  password          = var.db_password # Injected from Secrets Module
-  db_name           = "vegandb"       # The initial database name
+  password          = var.db_password
+  db_name           = "vegandb"
 
-  db_subnet_group_name   = aws_db_subnet_group.default.name
-  vpc_security_group_ids = [aws_security_group.rds_sg.id]
+  db_subnet_group_name = aws_db_subnet_group.default.name
 
-  skip_final_snapshot = true # For lab/dev only (destroys faster)
+  # CRITICAL: Use the variable we just added
+  vpc_security_group_ids = [var.db_sg_id]
+
+  skip_final_snapshot = true
   publicly_accessible = false
 }
