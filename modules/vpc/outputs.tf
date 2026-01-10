@@ -24,5 +24,19 @@ output "vpc_cidr" {
 }
 
 output "data_subnet_ids" {
-  value = aws_subnet.data_subnets[*].id
+  value = aws_subnet.private_data[*].id
+}
+
+# For App Layer (if needed later)
+output "app_subnet_ids" {
+  value = aws_subnet.private_app[*].id
+}
+
+# For Public Layer (ALB needs this)
+output "public_subnet_ids" {
+  value = aws_subnet.public[*].id
+}
+
+output "vpc_id" {
+  value = aws_vpc.main.id
 }
