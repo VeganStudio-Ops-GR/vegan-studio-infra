@@ -1,5 +1,6 @@
 module "vpc" {
-  source = "./modules/vpc"
+  # NOTICE: The path now goes UP two levels (../../) to find modules
+  source = "../../modules/vpc"
 
   project_name        = var.project_name
   vpc_cidr            = var.vpc_cidr
@@ -8,9 +9,10 @@ module "vpc" {
   data_subnets_cidr   = var.data_subnets_cidr
   availability_zones  = var.availability_zones
 }
+
 module "sg" {
-  source = "./modules/sg"
+  source = "../../modules/sg"
 
   project_name = var.project_name
-  vpc_id       = module.vpc.vpc_id # <--- The magic link between modules
+  vpc_id       = module.vpc.vpc_id
 }
