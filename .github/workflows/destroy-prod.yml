@@ -1,7 +1,6 @@
 name: Destroy Prod Environment
 
 on:
-    # Manual Trigger ONLY (The "Red Button")
     workflow_dispatch:
 
 jobs:
@@ -16,7 +15,7 @@ jobs:
 
         defaults:
             run:
-                working-directory: ./env/prod # <--- Target Prod Folder
+                working-directory: ./env/prod
 
         steps:
             - name: Checkout Code
@@ -25,10 +24,16 @@ jobs:
             - name: Setup Terraform
               uses: hashicorp/setup-terraform@v2
 
-            # 1. Initialize (We must connect to the state to know what to destroy)
+            # 1. Initialize
             - name: Terraform Init
               run: terraform init -backend-config=backend.conf
 
-            # 2. The Destructive Action
-            - name: Terraform Destroy
-              run: terraform destroy -auto-approve
+            # 2. Plan the Destruction (The Safety Step)
+            # We save the plan to a file named 'tfplan'
+            - name: Terraform Plan Destroy
+              run: terraform plan -destroy -out=tfplan
+
+            # 3. Execute the Destruction
+            # We apply the EXACT plan we just created
+            - name: Terraform Apply Destroy
+              run: terraform apply -auto-approve tfplan
