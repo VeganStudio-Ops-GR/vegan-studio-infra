@@ -1,6 +1,3 @@
-variable "project_name" { type = string }
-variable "vpc_id" { type = string }
-
 # 1. ALB Security Group (The Front Door)
 # Allows traffic from the entire internet (HTTP)
 resource "aws_security_group" "alb_sg" {
@@ -36,7 +33,7 @@ resource "aws_security_group" "app_sg" {
     from_port       = 80
     to_port         = 80
     protocol        = "tcp"
-    security_groups = [aws_security_group.alb_sg.id] # <--- Link to ALB
+    security_groups = [aws_security_group.alb_sg.id]
   }
 
   # Allow SSH (Optional for debugging)
@@ -68,7 +65,7 @@ resource "aws_security_group" "db_sg" {
     from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
-    security_groups = [aws_security_group.app_sg.id] # <--- Link to App
+    security_groups = [aws_security_group.app_sg.id]
   }
 
   egress {
