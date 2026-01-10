@@ -26,7 +26,7 @@ jobs:
 
       # Initialize using the existing backend.conf file
       - name: Terraform Init
-        run: terraform init -backend-config=backend.conf
+        run: terraform init -backend-config=backend.conf -input=false
 
       # 1. Create a Destroy Plan file (Safety first)
       - name: Terraform Plan Destroy
