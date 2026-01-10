@@ -1,50 +1,37 @@
-name: Deploy Dev Environment
+name: "Dev Infrastructure Destroy"
 
 on:
-    push:
-        branches:
-            - main
-        paths:
-            - "env/dev/**" # Trigger if Dev config changes
-            - "modules/**" # OR if Module code changes
+  workflow_dispatch:
 
 jobs:
-    terraform:
-        name: "Dev: Plan & Apply"
-        runs-on: ubuntu-latest
+  destroy:
+    name: "Terraform Destroy"
+    runs-on: ubuntu-latest
 
-        # 1. Inject AWS Secrets
-        env:
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_REGION: "ap-south-1"
+    defaults:
+      run:
+        working-directory: ./env/dev
 
-        defaults:
-            run:
-                working-directory: ./env/dev # 2. Critical: Run inside Dev folder
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: "ap-south-1"
 
-        steps:
-            - name: Checkout Code
-              uses: actions/checkout@v3
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-            - name: Setup Terraform
-              uses: hashicorp/setup-terraform@v2
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
 
-            # 3. Initialize (Partial Backend)
-            - name: Terraform Init
-              run: terraform init -backend-config=backend.conf
+      # Initialize using the existing backend.conf file
+      - name: Terraform Init
+        run: terraform init -backend-config=backend.conf
 
-            - name: Terraform Validate
-              run: terraform validate
+      # 1. Create a Destroy Plan file (Safety first)
+      - name: Terraform Plan Destroy
+        run: terraform plan -destroy -out=destroy.tfplan
 
-            # 4. Strict Plan (Save to file 'tfplan')
-            # -input=false: Don't ask questions if variables are missing.
-            # -out=tfplan: Freeze the plan into a file.
-            - name: Terraform Plan
-              run: terraform plan -out=tfplan -input=false
-
-            # 5. Strict Apply (Execute the file)
-            # We do NOT need -auto-approve because the file implies approval.
-            - name: Terraform Apply
-              if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-              run: terraform apply -input=false tfplan
+      # 2. Execute the specific Plan file
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve destroy.tfplan
