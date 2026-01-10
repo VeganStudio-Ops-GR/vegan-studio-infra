@@ -33,3 +33,4 @@ variable "availability_zones" {
   description = "AZs"
   type        = list(string)
 }
+# Initial Pipeline Trigger
