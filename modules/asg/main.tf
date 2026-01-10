@@ -12,7 +12,7 @@ data "aws_ami" "amazon_linux" {
 resource "aws_launch_template" "app_lt" {
   name_prefix   = "${var.project_name}-lt"
   image_id      = data.aws_ami.amazon_linux.id
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
 
   # Attach the IAM Profile so EC2 can talk to Secrets Manager
   iam_instance_profile {
