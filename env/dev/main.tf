@@ -1,7 +1,8 @@
+# ---------------------------------------------------------
+# 1. NETWORK LAYER
+# ---------------------------------------------------------
 module "vpc" {
-  # NOTICE: The path now goes UP two levels (../../) to find modules
-  source = "../../modules/vpc"
-
+  source              = "../../modules/vpc"
   project_name        = var.project_name
   vpc_cidr            = var.vpc_cidr
   public_subnets_cidr = var.public_subnets_cidr
@@ -10,41 +11,70 @@ module "vpc" {
   availability_zones  = var.availability_zones
 }
 
+# ---------------------------------------------------------
+# 2. SECURITY LAYER (Firewalls & Roles)
+# ---------------------------------------------------------
 module "sg" {
-  source = "../../modules/sg"
-
+  source       = "../../modules/sg"
   project_name = var.project_name
   vpc_id       = module.vpc.vpc_id
 }
-# MODULE 3: IAM Role (Security)
+
 module "iam" {
   source       = "../../modules/iam"
   project_name = var.project_name
 }
 
-# MODULE 4: Secrets Manager (Database Password)
 module "secrets" {
   source       = "../../modules/secrets"
   project_name = var.project_name
 }
 
-# MODULE 5: S3 Bucket (Artifacts)
+# ---------------------------------------------------------
+# 3. DATA LAYER (Storage & Database)
+# ---------------------------------------------------------
 module "s3" {
   source       = "../../modules/s3"
   project_name = var.project_name
   env          = "dev"
 }
 
-# MODULE 6: RDS Database (MySQL)
 module "rds" {
   source       = "../../modules/rds"
   project_name = var.project_name
 
-  # Network Connections (From VPC Module)
-  vpc_id = module.vpc.vpc_id
-  # We use DATA subnets for the Database layer
+  vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.data_subnet_ids
 
-  # Security Connection (From Secrets Module)
+  # Injecting the Password from Secrets Module
   db_password = module.secrets.db_password_value
+
+  # Injecting the Security Group from SG Module (NEW!)
+  db_sg_id = module.sg.db_sg_id
+}
+
+# ---------------------------------------------------------
+# 4. APPLICATION LAYER (ALB & ASG) - NEW!
+# ---------------------------------------------------------
+module "alb" {
+  source            = "../../modules/alb"
+  project_name      = var.project_name
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_ids = module.vpc.public_subnet_ids
+  alb_sg_id         = module.sg.alb_sg_id
+}
+
+module "asg" {
+  source       = "../../modules/asg"
+  project_name = var.project_name
+
+  # Network
+  private_subnet_ids = module.vpc.app_subnet_ids
+  app_sg_id          = module.sg.app_sg_id
+  target_group_arn   = module.alb.target_group_arn
+
+  # App Configuration (User Data Injection)
+  iam_instance_profile = module.iam.instance_profile_name
+  secret_name          = module.secrets.secret_name
+  db_endpoint          = module.rds.db_endpoint
 }

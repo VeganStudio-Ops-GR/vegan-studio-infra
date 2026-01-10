@@ -1,28 +1,52 @@
-# 1. LOAD BALANCER SECURITY GROUP (Public Facing)
+variable "project_name" { type = string }
+variable "vpc_id" { type = string }
+
+# 1. ALB Security Group (The Front Door)
+# Allows traffic from the entire internet (HTTP)
 resource "aws_security_group" "alb_sg" {
   name        = "${var.project_name}-alb-sg"
-  description = "Allow HTTP/HTTPS from Internet"
+  description = "Allow HTTP from internet"
   vpc_id      = var.vpc_id
 
-  # Inbound: Allow HTTP (80) from Anywhere
   ingress {
-    description = "HTTP from Internet"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Inbound: Allow HTTPS (443) from Anywhere
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "${var.project_name}-alb-sg" }
+}
+
+# 2. App Security Group (The Waiter)
+# Only accepts traffic from the ALB
+resource "aws_security_group" "app_sg" {
+  name        = "${var.project_name}-app-sg"
+  description = "Allow HTTP from ALB only"
+  vpc_id      = var.vpc_id
+
   ingress {
-    description = "HTTPS from Internet"
-    from_port   = 443
-    to_port     = 443
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_sg.id] # <--- Link to ALB
+  }
+
+  # Allow SSH (Optional for debugging)
+  ingress {
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Outbound: Allow all traffic to go out
   egress {
     from_port   = 0
     to_port     = 0
@@ -30,55 +54,29 @@ resource "aws_security_group" "alb_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name = "${var.project_name}-alb-sg"
-  }
+  tags = { Name = "${var.project_name}-app-sg" }
 }
 
-# 2. APPLICATION SECURITY GROUP (Private - Trusted by ALB)
-resource "aws_security_group" "app_sg" {
-  name        = "${var.project_name}-app-sg"
-  description = "Allow traffic only from ALB"
-  vpc_id      = var.vpc_id
-
-  # Inbound: Allow traffic ONLY from the ALB Security Group
-  ingress {
-    description     = "HTTP from ALB"
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb_sg.id] # <--- CHAINING
-  }
-
-  # Outbound: Allow all (needed for downloading updates)
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project_name}-app-sg"
-  }
-}
-
-# 3. DATABASE SECURITY GROUP (Private - Trusted by App)
+# 3. Database Security Group (The Vault)
+# Only accepts traffic from the App
 resource "aws_security_group" "db_sg" {
   name        = "${var.project_name}-db-sg"
-  description = "Allow traffic only from App Servers"
+  description = "Allow MySQL from App only"
   vpc_id      = var.vpc_id
 
-  # Inbound: Allow MySQL (3306) ONLY from App Security Group
   ingress {
-    description     = "MySQL from App Servers"
     from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
-    security_groups = [aws_security_group.app_sg.id] # <--- CHAINING
+    security_groups = [aws_security_group.app_sg.id] # <--- Link to App
   }
 
-  tags = {
-    Name = "${var.project_name}-db-sg"
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = { Name = "${var.project_name}-db-sg" }
 }
