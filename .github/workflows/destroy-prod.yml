@@ -1,39 +1,39 @@
 name: Destroy Prod Environment
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
-    destroy:
-        name: "Prod: Destroy Infrastructure"
-        runs-on: ubuntu-latest
+  destroy:
+    name: "Prod: Destroy Infrastructure"
+    runs-on: ubuntu-latest
 
-        env:
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_REGION: "ap-south-1"
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: "ap-south-1"
 
-        defaults:
-            run:
-                working-directory: ./env/prod
+    defaults:
+      run:
+        working-directory: ./env/prod
 
-        steps:
-            - name: Checkout Code
-              uses: actions/checkout@v3
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-            - name: Setup Terraform
-              uses: hashicorp/setup-terraform@v2
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
 
-            # 1. Initialize
-            - name: Terraform Init
-              run: terraform init -backend-config=backend.conf
+      # 1. Initialize
+      - name: Terraform Init
+        run: terraform init -backend-config="./backend.conf" -input=false
 
-            # 2. Plan the Destruction (The Safety Step)
-            # We save the plan to a file named 'tfplan'
-            - name: Terraform Plan Destroy
-              run: terraform plan -destroy -out=tfplan
+      # 2. Plan the Destruction (The Safety Step)
+      # We save the plan to a file named 'tfplan'
+      - name: Terraform Plan Destroy
+        run: terraform plan -destroy -out=tfplan
 
-            # 3. Execute the Destruction
-            # We apply the EXACT plan we just created
-            - name: Terraform Apply Destroy
-              run: terraform apply -auto-approve tfplan
+      # 3. Execute the Destruction
+      # We apply the EXACT plan we just created
+      - name: Terraform Apply Destroy
+        run: terraform apply -auto-approve tfplan
