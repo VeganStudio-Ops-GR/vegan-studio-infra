@@ -63,3 +63,43 @@ sudo yum update -y
 # 2. Install the CloudWatch Agent package from the Amazon Linux repositories
 sudo yum install amazon-cloudwatch-agent -y
 systemctl restart httpd
+
+# ... (Previous code for Apache, Git, and Secrets) ...
+
+# ---------------------------------------------------------
+# 5. CONFIGURE & START CLOUDWATCH AGENT
+# ---------------------------------------------------------
+
+# Create the configuration file
+cat <<EOF > /opt/aws/amazon-cloudwatch-agent/bin/config.json
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "root"
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/httpd/error_log",
+            "log_group_name": "vegan-studio-apache-errors",
+            "log_stream_name": "{instance_id}"
+          }
+        ]
+      }
+    }
+  },
+  "metrics": {
+    "metrics_collected": {
+      "mem": {
+        "measurement": ["mem_used_percent"]
+      }
+    }
+  }
+}
+EOF
+
+# Start the agent using that config file
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+-a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json
