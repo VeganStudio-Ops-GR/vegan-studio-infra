@@ -3,7 +3,7 @@ resource "aws_cloudwatch_dashboard" "main" {
 
   dashboard_body = jsonencode({
     widgets = [
-      # Widget 1: ALB Request Count
+      # 1. Total Traffic (Metric)
       {
         type   = "metric"
         x      = 0
@@ -12,7 +12,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", module.alb.alb_arn_suffix]
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", var.alb_arn_suffix]
           ]
           period = 300
           stat   = "Sum"
@@ -20,7 +20,8 @@ resource "aws_cloudwatch_dashboard" "main" {
           title  = "Total Traffic (ALB)"
         }
       },
-      # Widget 2: 5XX Errors (The "Panic" Metric)
+
+      # 2. Server Errors (Metric)
       {
         type   = "metric"
         x      = 12
@@ -29,30 +30,62 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", module.alb.alb_arn_suffix]
+            ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", var.alb_arn_suffix]
           ]
-          period = 60
+          period = 300
           stat   = "Sum"
           region = "ap-south-1"
           title  = "Server Errors (5XX)"
-          color  = "#d62728"
         }
       },
-      # Widget 3: CPU Utilization (Saturation)
+
+      # 3. ASG CPU Usage (Metric)
       {
         type   = "metric"
         x      = 0
-        y      = 7
+        y      = 6
         width  = 24
         height = 6
         properties = {
           metrics = [
-            ["AWS/EC2", "CPUUtilization", "AutoScalingGroupName", module.asg.asg_name]
+            ["AWS/EC2", "CPUUtilization", "AutoScalingGroupName", "${var.project_name}-asg"]
           ]
           period = 300
           stat   = "Average"
           region = "ap-south-1"
           title  = "ASG Cluster CPU Usage"
+        }
+      },
+
+      # ---------------------------------------------------------
+      # NEW: LOG WIDGETS (The "Why" Factor)
+      # ---------------------------------------------------------
+
+      # 4. Application Error Logs (Canary Monitor)
+      {
+        type   = "log"
+        x      = 0
+        y      = 12
+        width  = 24
+        height = 6
+        properties = {
+          query  = "SOURCE 'vegan-studio-apache-errors' | fields @timestamp, @message | sort @timestamp desc | limit 20"
+          region = "ap-south-1"
+          title  = "Live Application Errors (Canary/Blue-Green Monitor)"
+        }
+      },
+
+      # 5. Infrastructure Provisioning Logs (Bootstrap Check)
+      {
+        type   = "log"
+        x      = 0
+        y      = 18
+        width  = 24
+        height = 6
+        properties = {
+          query  = "SOURCE 'vegan-studio-provisioning-logs' | fields @timestamp, @message | sort @timestamp desc | limit 20"
+          region = "ap-south-1"
+          title  = "Provisioning Progress (User-Data Logs)"
         }
       }
     ]
