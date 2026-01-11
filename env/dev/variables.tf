@@ -34,3 +34,8 @@ variable "availability_zones" {
   type        = list(string)
 }
 # Initial Pipeline Trigger
+
+variable "env_message" {
+  description = "Message to display on the home page"
+  type        = string
+}

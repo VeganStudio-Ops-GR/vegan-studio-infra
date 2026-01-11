@@ -49,12 +49,12 @@ module "rds" {
   # Injecting the Password from Secrets Module
   db_password = module.secrets.db_password_value
 
-  # Injecting the Security Group from SG Module (NEW!)
+  # Injecting the Security Group from SG Module
   db_sg_id = module.sg.db_sg_id
 }
 
 # ---------------------------------------------------------
-# 4. APPLICATION LAYER (ALB & ASG) - NEW!
+# 4. APPLICATION LAYER (ALB & ASG)
 # ---------------------------------------------------------
 module "alb" {
   source            = "../../modules/alb"
@@ -77,4 +77,7 @@ module "asg" {
   iam_instance_profile = module.iam.instance_profile_name
   secret_name          = module.secrets.secret_name
   db_endpoint          = module.rds.db_endpoint
+
+  # --- NEW: Blue/Green Watermarking ---
+  env_message = var.env_message
 }
