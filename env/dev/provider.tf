@@ -1,5 +1,14 @@
 provider "aws" {
   region = var.aws_region
+
+}
+# ADD THIS PART HERE
+provider "aws" {
+  alias  = "dns_account"
+  region = var.aws_region
+  assume_role {
+    role_arn = "arn:aws:iam::506776019563:role/account-70-to-account63"
+  }
 }
 
 terraform {

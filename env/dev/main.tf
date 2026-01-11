@@ -1,21 +1,5 @@
-# ---------------------------------------------------------
-# 1. PROVIDER CONFIGURATION
-# ---------------------------------------------------------
 
-# Default provider for the Workload Account (Account 70)
-provider "aws" {
-  region = "ap-south-1"
-}
 
-# Aliased provider to "Jump" into the DNS Account (Account 63)
-provider "aws" {
-  alias  = "dns_account"
-  region = "ap-south-1"
-  assume_role {
-    # This is the bridge role you created in Account 63
-    role_arn = "arn:aws:iam::506776019563:role/account-70-to-account63"
-  }
-}
 
 # ---------------------------------------------------------
 # 2. INFRASTRUCTURE MODULES (VPC, SG, RDS, etc.)
