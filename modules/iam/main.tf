@@ -56,3 +56,9 @@ resource "aws_iam_role_policy_attachment" "ssm_policy" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
+
+# 1. Attach the Managed Policy to your existing EC2 Role
+resource "aws_iam_role_policy_attachment" "cloudwatch_agent" {
+  role       = aws_iam_role.ec2_role.name # Correct: Points to the resource above
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}

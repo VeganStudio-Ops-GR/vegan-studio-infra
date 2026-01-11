@@ -57,4 +57,9 @@ sed -i "s/'Enter Your Database Name'/'vegandb'/g" db.php
 # ---------------------------------------------------------
 # 4. FINAL RESTART
 # ---------------------------------------------------------
+
+sudo yum update -y
+
+# 2. Install the CloudWatch Agent package from the Amazon Linux repositories
+sudo yum install amazon-cloudwatch-agent -y
 systemctl restart httpd
