@@ -12,8 +12,8 @@ output "alb_arn_suffix" {
 }
 
 # Add this to modules/alb/outputs.tf
-output "alb_zone_id" {
-  value = aws_lb.app_alb.zone_id # Make sure 'app_alb' matches the resource name in your module
-}
+#output "alb_zone_id" {
+#value = aws_lb.app_alb.zone_id # Make sure 'app_alb' matches the resource name in your module
+#}
 
 
