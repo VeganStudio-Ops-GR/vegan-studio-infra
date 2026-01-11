@@ -26,7 +26,8 @@ jobs:
 
       # 1. Initialize
       - name: Terraform Init
-        run: terraform init -backend-config="./backend.conf" -input=false
+        # Use -reconfigure to ensure it clears any previous partial attempts
+        run: terraform init -backend-config=backend.conf -input=false -reconfigure
 
       # 2. Plan the Destruction (The Safety Step)
       # We save the plan to a file named 'tfplan'
