@@ -36,4 +36,4 @@ jobs:
 
       - name: Terraform Destroy
         # 5. Point to the plan file directly
-        run: terraform destroy -auto-approve destroy.tfplan
+        run: terraform apply -input=false -auto-approve destroy.tfplan
