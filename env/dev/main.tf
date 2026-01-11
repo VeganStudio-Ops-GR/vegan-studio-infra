@@ -1,5 +1,5 @@
 # ---------------------------------------------------------
-# 2. INFRASTRUCTURE MODULES (VPC, SG, RDS, etc.)
+# 1. INFRASTRUCTURE MODULES
 # ---------------------------------------------------------
 
 module "vpc" {
@@ -44,7 +44,7 @@ module "rds" {
 }
 
 # ---------------------------------------------------------
-# 3. APPLICATION LAYER (ALB & ASG)
+# 2. APPLICATION LAYER (ALB & ASG)
 # ---------------------------------------------------------
 
 module "alb" {
@@ -65,31 +65,29 @@ module "asg" {
   secret_name          = module.secrets.secret_name
   db_endpoint          = module.rds.db_endpoint
 
-  # PASSING THE MESSAGE TO THE ASG MODULE
+  # Injects the watermark into the Green instances
   env_message = "🟢 DEV ENVIRONMENT: GREEN FLEET ACTIVE"
 }
 
 # ---------------------------------------------------------
-# 4. DATA LOOKUPS (Finding the ALBs for DNS)
+# 3. DATA LOOKUPS (Finding the ALBs for DNS)
 # ---------------------------------------------------------
 
-# Finds your new Dev ALB (Account 70)
 data "aws_lb" "dev_alb" {
   name = "vegan-studio-dev-alb"
 }
 
-# Finds your existing Prod ALB (Account 70)
 data "aws_lb" "prod_alb" {
   name = "vegan-studio-prod-alb"
 }
 
 # ---------------------------------------------------------
-# 5. CANARY DNS RECORDS (rajdevops.click)
+# 4. CANARY DNS RECORDS (rajdevops.click)
 # ---------------------------------------------------------
 
-# THE BLUE PATH (90% Traffic to Production)
+# THE BLUE PATH (90% Weight)
 resource "aws_route53_record" "blue_primary" {
-  provider = aws.dns_account # Using the Account 63 Provider from provider.tf
+  provider = aws.dns_account
   zone_id  = var.hosted_zone_id
   name     = "rajdevops.click"
   type     = "A"
@@ -101,14 +99,14 @@ resource "aws_route53_record" "blue_primary" {
 
   alias {
     name                   = data.aws_lb.prod_alb.dns_name
-    zone_id                = data.aws_lb.prod_alb.dns_name == "" ? "" : data.aws_lb.prod_alb.zone_id
+    zone_id                = data.aws_lb.prod_alb.zone_id
     evaluate_target_health = true
   }
 }
 
-# THE GREEN PATH (10% Traffic to Dev/New)
+# THE GREEN PATH (10% Weight)
 resource "aws_route53_record" "green_canary" {
-  provider = aws.dns_account # Using the Account 63 Provider from provider.tf
+  provider = aws.dns_account
   zone_id  = var.hosted_zone_id
   name     = "rajdevops.click"
   type     = "A"
@@ -121,6 +119,24 @@ resource "aws_route53_record" "green_canary" {
   alias {
     name                   = data.aws_lb.dev_alb.dns_name
     zone_id                = data.aws_lb.dev_alb.zone_id
+    evaluate_target_health = true
+  }
+}
+
+# ---------------------------------------------------------
+# 5. SUBDOMAIN FIX (WWW RECORD)
+# ---------------------------------------------------------
+
+# This fixes the NXDOMAIN error for www.rajdevops.click
+resource "aws_route53_record" "www" {
+  provider = aws.dns_account
+  zone_id  = var.hosted_zone_id
+  name     = "www.rajdevops.click"
+  type     = "A"
+
+  alias {
+    name                   = "rajdevops.click"
+    zone_id                = var.hosted_zone_id
     evaluate_target_health = true
   }
 }
