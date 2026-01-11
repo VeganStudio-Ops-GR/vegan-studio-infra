@@ -8,5 +8,9 @@ output "alb_dns_name" {
 
 output "alb_arn_suffix" {
   description = "The ARN suffix for use with CloudWatch Metrics"
-  value       = aws_lb.vegan_studio_alb.arn_suffix # Make sure 'vegan_studio_alb' matches your resource name
+  value       = aws_lb.app_lb.arn_suffix
+}
+
+output "alb_dns_name" {
+  value = aws_lb.app_lb.dns_name
 }
