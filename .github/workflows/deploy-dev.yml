@@ -1,13 +1,16 @@
-name: "Dev Infrastructure Destroy"
+name: "Dev Infrastructure Deploy"
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Keep it manual for now so we control the "Green" launch
+  push:
+    paths:
+      - "env/dev/**"
+      - "modules/**"
 
 jobs:
-  destroy:
-    name: "Terraform Destroy"
+  deploy:
+    name: "Terraform Apply"
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: ./env/dev
@@ -24,14 +27,11 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      # Initialize using the existing backend.conf file
       - name: Terraform Init
         run: terraform init -backend-config=backend.conf -input=false
 
-      # 1. Create a Destroy Plan file (Safety first)
-      - name: Terraform Plan Destroy
-        run: terraform plan -destroy -out=destroy.tfplan
+      - name: Terraform Plan
+        run: terraform plan -out=deploy.tfplan
 
-      # 2. Execute the specific Plan file
-      - name: Terraform Destroy
-        run: terraform destroy -auto-approve destroy.tfplan
+      - name: Terraform Apply
+        run: terraform apply -auto-approve deploy.tfplan
