@@ -53,7 +53,7 @@ module "rds" {
   db_sg_id = module.sg.db_sg_id
 }
 
-# ---------------------------------------------------------
+# # ---------------------------------------------------------
 # 4. APPLICATION LAYER (ALB & ASG)
 # ---------------------------------------------------------
 module "alb" {
@@ -78,8 +78,10 @@ module "asg" {
   secret_name          = module.secrets.secret_name
   db_endpoint          = module.rds.db_endpoint
 
-  # --- NEW: Blue/Green Watermarking ---
-  env_message = var.env_message
+  # --- FIXED: Environment Watermarking ---
+  # We pass the message directly here. 
+  # Ensure var.env_message is defined in variables.tf if you use that instead.
+  env_message = "🟢 DEV ENVIRONMENT: GREEN FLEET ACTIVE"
 }
 
 # ---------------------------------------------------------
