@@ -112,7 +112,12 @@ resource "aws_route53_record" "blue_primary" {
   }
 }
 
-# THE GREEN PATH (10% Traffic to Dev/New)
+# 1. Add this to look up your NEW Dev ALB dynamically
+data "aws_lb" "dev_alb" {
+  name = "vegan-studio-dev-alb" # Ensure this matches your Dev ALB name
+}
+
+# 2. Update the record to use the Data Source instead of the module
 resource "aws_route53_record" "green_canary" {
   zone_id = var.hosted_zone_id
   name    = "rajdevops.click"
@@ -124,9 +129,10 @@ resource "aws_route53_record" "green_canary" {
   }
 
   alias {
-    # Using the ALB created by the module in THIS dev environment
-    name                   = module.alb.alb_dns_name
-    zone_id                = module.alb.alb_zone_id
+    name                   = data.aws_lb.dev_alb.dns_name
+    zone_id                = data.aws_lb.dev_alb.zone_id # Use the data source attribute
     evaluate_target_health = true
   }
 }
+
+
