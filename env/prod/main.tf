@@ -76,3 +76,15 @@ module "asg" {
   secret_name          = module.secrets.secret_name
   db_endpoint          = module.rds.db_endpoint
 }
+
+module "cdn" {
+  source = "../../modules/cdn"
+
+  domain_name         = "rajdevops.click"
+  alb_dns_name        = module.alb.alb_dns_name           # Passes your Prod ALB URL
+  acm_certificate_arn = aws_acm_certificate.prod_cert.arn # Uses the Issued Cert
+}
+
+output "cloudfront_domain_name" {
+  value = module.cdn.cloudfront_dns
+}
