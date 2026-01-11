@@ -7,3 +7,8 @@ variable "target_group_arn" { type = string }
 variable "iam_instance_profile" { type = string }
 variable "secret_name" { type = string }
 variable "db_endpoint" { type = string }
+
+variable "env_message" {
+  description = "The environment specific message"
+  type        = string
+}

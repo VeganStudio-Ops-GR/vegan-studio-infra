@@ -33,3 +33,7 @@ variable "availability_zones" {
   description = "AZs"
   type        = list(string)
 }
+variable "env_message" {
+  description = "Message to display on the home page"
+  type        = string
+}

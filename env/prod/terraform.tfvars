@@ -14,3 +14,6 @@ app_subnets_cidr = ["10.1.10.0/24", "10.1.11.0/24"]
 data_subnets_cidr = ["10.1.20.0/24", "10.1.21.0/24"]
 
 availability_zones = ["ap-south-1a", "ap-south-1b"]
+
+# env/prod/terraform.tfvars
+env_message = "Welcome to Vegan Studio - BLUE ENVIRONMENT (PROD)"
