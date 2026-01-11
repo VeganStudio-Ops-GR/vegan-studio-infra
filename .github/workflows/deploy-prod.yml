@@ -1,12 +1,9 @@
 name: Deploy Prod Environment
 
 on:
-  #push:
-  workflow_dispatch:
-    # branches:
-    # - main
-    # paths:
-    #  - "env/prod/**" # <--- ONLY run if Prod files change
+  push:
+    branches:
+      - main
     # Note: We do NOT trigger on 'modules/**' for Prod automatically.
     # Best Practice: Test modules in Dev first, then manually sync Prod.
 
