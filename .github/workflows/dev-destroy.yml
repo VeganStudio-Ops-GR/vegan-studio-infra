@@ -25,12 +25,15 @@ jobs:
         uses: hashicorp/setup-terraform@v2
 
       - name: Terraform Init
-        run: terraform init -backend-config=backend.conf -input=false -reconfigure
+        # 1. Use ./ to be explicit
+        # 2. -input=false prevents the hang
+        # 3. -reconfigure ensures it ignores any previous failed attempts
+        run: terraform init -backend-config="./backend.conf" -input=false -reconfigure
 
-      # 1. Create a Destroy Plan file
       - name: Terraform Plan Destroy
-        run: terraform plan -destroy -out=destroy.tfplan
+        # 4. Added -input=false here too
+        run: terraform plan -destroy -out=destroy.tfplan -input=false
 
-      # 2. Execute the specific Plan file
       - name: Terraform Destroy
+        # 5. Point to the plan file directly
         run: terraform destroy -auto-approve destroy.tfplan
