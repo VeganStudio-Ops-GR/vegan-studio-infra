@@ -1,3 +1,13 @@
+# This provider "jumps" into Account 63 using the role you created
+provider "aws" {
+  alias  = "dns_account"
+  region = "ap-south-1"
+  assume_role {
+    role_arn = "arn:aws:iam::506776019563:role/account-70-to-account63"
+  }
+}
+
+
 # ---------------------------------------------------------
 # 1. NETWORK LAYER
 # ---------------------------------------------------------
@@ -93,14 +103,15 @@ data "aws_lb" "prod_alb" {
 }
 
 # ---------------------------------------------------------
-# 2. CANARY DNS RECORDS (rajdevops.click)
+# 2. UPDATED CANARY DNS RECORDS
 # ---------------------------------------------------------
 
-# THE BLUE PATH (90% Traffic to Production)
+# THE BLUE PATH (90% Traffic)
 resource "aws_route53_record" "blue_primary" {
-  zone_id = var.hosted_zone_id
-  name    = "rajdevops.click"
-  type    = "A"
+  provider = aws.dns_account # <--- CRITICAL: Tells Terraform to use the Bridge
+  zone_id  = var.hosted_zone_id
+  name     = "rajdevops.click"
+  type     = "A"
 
   set_identifier = "blue-version-1"
   weighted_routing_policy {
@@ -114,16 +125,12 @@ resource "aws_route53_record" "blue_primary" {
   }
 }
 
-# 1. Add this to look up your NEW Dev ALB dynamically
-data "aws_lb" "dev_alb" {
-  name = "vegan-studio-dev-alb" # Ensure this matches your Dev ALB name
-}
-
-# 2. Update the record to use the Data Source instead of the module
+# THE GREEN PATH (10% Traffic)
 resource "aws_route53_record" "green_canary" {
-  zone_id = var.hosted_zone_id
-  name    = "rajdevops.click"
-  type    = "A"
+  provider = aws.dns_account # <--- CRITICAL: Tells Terraform to use the Bridge
+  zone_id  = var.hosted_zone_id
+  name     = "rajdevops.click"
+  type     = "A"
 
   set_identifier = "green-version-2"
   weighted_routing_policy {
@@ -132,9 +139,7 @@ resource "aws_route53_record" "green_canary" {
 
   alias {
     name                   = data.aws_lb.dev_alb.dns_name
-    zone_id                = data.aws_lb.dev_alb.zone_id # Use the data source attribute
+    zone_id                = data.aws_lb.dev_alb.zone_id
     evaluate_target_health = true
   }
 }
-
-
