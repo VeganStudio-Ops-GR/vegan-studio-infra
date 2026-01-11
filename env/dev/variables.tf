@@ -39,3 +39,9 @@ variable "env_message" {
   description = "Message to display on the home page"
   type        = string
 }
+
+variable "hosted_zone_id" {
+  description = "The Route 53 Hosted Zone ID for rajdevops.click"
+  type        = string
+  default     = "Z07358953NPV1XIVK56U9" # The ID you just provided
+}

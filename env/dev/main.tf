@@ -81,3 +81,52 @@ module "asg" {
   # --- NEW: Blue/Green Watermarking ---
   env_message = var.env_message
 }
+
+# ---------------------------------------------------------
+# 1. FETCH PRODUCTION ALB (The "Blue" Environment)
+# ---------------------------------------------------------
+# This looks up your existing Prod ALB so we don't have to hardcode the DNS
+data "aws_lb" "prod_alb" {
+  name = "vegan-studio-prod-alb"
+}
+
+# ---------------------------------------------------------
+# 2. CANARY DNS RECORDS (rajdevops.click)
+# ---------------------------------------------------------
+
+# THE BLUE PATH (90% Traffic to Production)
+resource "aws_route53_record" "blue_primary" {
+  zone_id = var.hosted_zone_id
+  name    = "rajdevops.click"
+  type    = "A"
+
+  set_identifier = "blue-version-1"
+  weighted_routing_policy {
+    weight = 90
+  }
+
+  alias {
+    name                   = data.aws_lb.prod_alb.dns_name
+    zone_id                = data.aws_lb.prod_alb.zone_id
+    evaluate_target_health = true
+  }
+}
+
+# THE GREEN PATH (10% Traffic to Dev/New)
+resource "aws_route53_record" "green_canary" {
+  zone_id = var.hosted_zone_id
+  name    = "rajdevops.click"
+  type    = "A"
+
+  set_identifier = "green-version-2"
+  weighted_routing_policy {
+    weight = 10
+  }
+
+  alias {
+    # Using the ALB created by the module in THIS dev environment
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
