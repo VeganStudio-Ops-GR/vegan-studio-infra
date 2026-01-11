@@ -1,6 +1,3 @@
-
-
-
 # ---------------------------------------------------------
 # 2. INFRASTRUCTURE MODULES (VPC, SG, RDS, etc.)
 # ---------------------------------------------------------
@@ -68,7 +65,7 @@ module "asg" {
   secret_name          = module.secrets.secret_name
   db_endpoint          = module.rds.db_endpoint
 
-  # Injecting the Green watermark for the Dev environment
+  # PASSING THE MESSAGE TO THE ASG MODULE
   env_message = "🟢 DEV ENVIRONMENT: GREEN FLEET ACTIVE"
 }
 
@@ -92,7 +89,7 @@ data "aws_lb" "prod_alb" {
 
 # THE BLUE PATH (90% Traffic to Production)
 resource "aws_route53_record" "blue_primary" {
-  provider = aws.dns_account # Using the Account 63 Provider
+  provider = aws.dns_account # Using the Account 63 Provider from provider.tf
   zone_id  = var.hosted_zone_id
   name     = "rajdevops.click"
   type     = "A"
@@ -104,14 +101,14 @@ resource "aws_route53_record" "blue_primary" {
 
   alias {
     name                   = data.aws_lb.prod_alb.dns_name
-    zone_id                = data.aws_lb.prod_alb.zone_id
+    zone_id                = data.aws_lb.prod_alb.dns_name == "" ? "" : data.aws_lb.prod_alb.zone_id
     evaluate_target_health = true
   }
 }
 
 # THE GREEN PATH (10% Traffic to Dev/New)
 resource "aws_route53_record" "green_canary" {
-  provider = aws.dns_account # Using the Account 63 Provider
+  provider = aws.dns_account # Using the Account 63 Provider from provider.tf
   zone_id  = var.hosted_zone_id
   name     = "rajdevops.click"
   type     = "A"

@@ -8,24 +8,27 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-# 2. The Launch Template
+# 2. The Launch Template (The Blueprint)
 resource "aws_launch_template" "app_lt" {
   name_prefix   = "${var.project_name}-lt"
   image_id      = data.aws_ami.amazon_linux.id
   instance_type = "t3.micro"
 
+  # Attach the IAM Profile
   iam_instance_profile {
     name = var.iam_instance_profile
   }
 
+  # Security Group (Allow HTTP from ALB)
   vpc_security_group_ids = [var.app_sg_id]
 
-  # THE FIX: Added env_message to the variables list below
+  # INJECT THE USER DATA SCRIPT
+  # We pass all variables including the env_message here
   user_data = base64encode(templatefile("${path.module}/userdata.sh", {
     secret_name = var.secret_name
     region      = "ap-south-1"
     db_endpoint = var.db_endpoint
-    env_message = var.env_message
+    env_message = var.env_message # <--- THIS CONNECTS IT ALL
   }))
 
   tag_specifications {
@@ -36,7 +39,7 @@ resource "aws_launch_template" "app_lt" {
   }
 }
 
-# 3. The Auto Scaling Group
+# 3. The Auto Scaling Group (The Manager)
 resource "aws_autoscaling_group" "app_asg" {
   name                = "${var.project_name}-asg"
   desired_capacity    = 2
@@ -49,6 +52,7 @@ resource "aws_autoscaling_group" "app_asg" {
     version = "$Latest"
   }
 
+  # Connect to the Load Balancer
   target_group_arns = [var.target_group_arn]
 
   tag {
