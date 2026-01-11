@@ -16,7 +16,4 @@ output "alb_zone_id" {
   value = aws_lb.app_alb.zone_id # Make sure 'app_alb' matches the resource name in your module
 }
 
-# Ensure you also have this for the DNS name
-output "alb_dns_name" {
-  value = aws_lb.app_alb.dns_name
-}
+
