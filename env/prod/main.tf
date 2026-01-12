@@ -1,6 +1,4 @@
-# ---------------------------------------------------------
-# 1. NETWORK LAYER
-# ---------------------------------------------------------
+# 1. NETWORKING
 module "vpc" {
   source              = "../../modules/vpc"
   project_name        = var.project_name
@@ -11,9 +9,7 @@ module "vpc" {
   availability_zones  = var.availability_zones
 }
 
-# ---------------------------------------------------------
-# 2. SECURITY LAYER
-# ---------------------------------------------------------
+# 2. SECURITY & IAM
 module "sg" {
   source       = "../../modules/sg"
   project_name = var.project_name
@@ -30,9 +26,7 @@ module "secrets" {
   project_name = var.project_name
 }
 
-# ---------------------------------------------------------
-# 3. DATA LAYER
-# ---------------------------------------------------------
+# 3. DATA
 module "s3" {
   source       = "../../modules/s3"
   project_name = var.project_name
@@ -48,9 +42,7 @@ module "rds" {
   db_sg_id           = module.sg.db_sg_id
 }
 
-# ---------------------------------------------------------
-# 4. APPLICATION LAYER
-# ---------------------------------------------------------
+# 4. APP LAYER
 module "alb" {
   source            = "../../modules/alb"
   project_name      = var.project_name
@@ -60,24 +52,18 @@ module "alb" {
 }
 
 module "asg" {
-  source       = "../../modules/asg"
-  project_name = var.project_name
-
-  # FIX: Adding the missing required argument
-  env_message = "PROD FLEET ACTIVE"
-
-  private_subnet_ids = module.vpc.app_subnet_ids
-  app_sg_id          = module.sg.app_sg_id
-  target_group_arn   = module.alb.target_group_arn
-
+  source               = "../../modules/asg"
+  project_name         = var.project_name
+  env_message          = "PROD FLEET ACTIVE" # Resolved the missing argument
+  private_subnet_ids   = module.vpc.app_subnet_ids
+  app_sg_id            = module.sg.app_sg_id
+  target_group_arn     = module.alb.target_group_arn
   iam_instance_profile = module.iam.instance_profile_name
   secret_name          = module.secrets.secret_name
   db_endpoint          = module.rds.db_endpoint
 }
 
-# ---------------------------------------------------------
-# 5. GLOBAL DELIVERY LAYER
-# ---------------------------------------------------------
+# 5. GLOBAL (CDN & SSL)
 resource "aws_acm_certificate" "prod_cert" {
   provider          = aws.us_east_1
   domain_name       = "rajdevops.click"
@@ -89,21 +75,16 @@ resource "aws_acm_certificate" "prod_cert" {
 
 module "cdn" {
   source = "../../modules/cdn"
-
-  # Pass providers to the child module
   providers = {
     aws           = aws
     aws.us_east_1 = aws.us_east_1
   }
-
   domain_name         = "rajdevops.click"
   alb_dns_name        = module.alb.alb_dns_name
   acm_certificate_arn = aws_acm_certificate.prod_cert.arn
 }
 
-# ---------------------------------------------------------
 # 6. OUTPUTS
-# ---------------------------------------------------------
 output "cloudfront_domain_name" {
   value = module.cdn.cloudfront_dns
 }
