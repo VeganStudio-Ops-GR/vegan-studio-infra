@@ -12,7 +12,7 @@ module "vpc" {
 }
 
 # ---------------------------------------------------------
-# 2. SECURITY LAYER (Firewalls & Roles)
+# 2. SECURITY LAYER
 # ---------------------------------------------------------
 module "sg" {
   source       = "../../modules/sg"
@@ -31,7 +31,7 @@ module "secrets" {
 }
 
 # ---------------------------------------------------------
-# 3. DATA LAYER (Storage & Database)
+# 3. DATA LAYER
 # ---------------------------------------------------------
 module "s3" {
   source       = "../../modules/s3"
@@ -40,19 +40,16 @@ module "s3" {
 }
 
 module "rds" {
-  source       = "../../modules/rds"
-  project_name = var.project_name
-
+  source             = "../../modules/rds"
+  project_name       = var.project_name
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.data_subnet_ids
-
-  # Injecting Password & Security Group
-  db_password = module.secrets.db_password_value
-  db_sg_id    = module.sg.db_sg_id
+  db_password        = module.secrets.db_password_value
+  db_sg_id           = module.sg.db_sg_id
 }
 
 # ---------------------------------------------------------
-# 4. APPLICATION LAYER (ALB & ASG)
+# 4. APPLICATION LAYER
 # ---------------------------------------------------------
 module "alb" {
   source            = "../../modules/alb"
@@ -66,29 +63,34 @@ module "asg" {
   source       = "../../modules/asg"
   project_name = var.project_name
 
-  # Network
+  # FIX: Adding the missing required argument
+  env_message = "PROD FLEET ACTIVE"
+
   private_subnet_ids = module.vpc.app_subnet_ids
   app_sg_id          = module.sg.app_sg_id
   target_group_arn   = module.alb.target_group_arn
 
-  # App Configuration
   iam_instance_profile = module.iam.instance_profile_name
   secret_name          = module.secrets.secret_name
   db_endpoint          = module.rds.db_endpoint
 }
 
 # ---------------------------------------------------------
-# 5. GLOBAL DELIVERY LAYER (CloudFront & SSL)
+# 5. GLOBAL DELIVERY LAYER
 # ---------------------------------------------------------
-
-# The "Orphaned" resource that caused the error
-
-
+resource "aws_acm_certificate" "prod_cert" {
+  provider          = aws.us_east_1
+  domain_name       = "rajdevops.click"
+  validation_method = "DNS"
+  lifecycle {
+    create_before_destroy = true
+  }
+}
 
 module "cdn" {
   source = "../../modules/cdn"
 
-  # Explicitly handing over the providers to fix the error
+  # Pass providers to the child module
   providers = {
     aws           = aws
     aws.us_east_1 = aws.us_east_1
@@ -104,8 +106,4 @@ module "cdn" {
 # ---------------------------------------------------------
 output "cloudfront_domain_name" {
   value = module.cdn.cloudfront_dns
-}
-
-output "alb_dns_name" {
-  value = module.alb.alb_dns_name
 }
