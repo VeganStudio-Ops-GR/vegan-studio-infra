@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    aws = {
+      source                = "hashicorp/aws"
+      configuration_aliases = [aws.us_east_1]
+    }
+  }
+}
+
 resource "aws_cloudfront_distribution" "main" {
   origin {
     domain_name = var.alb_dns_name
