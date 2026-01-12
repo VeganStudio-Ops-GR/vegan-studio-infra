@@ -1,7 +1,7 @@
 name: Destroy Prod Environment
 
 on:
-  workflow_dispatch:
+  push:
 
 jobs:
   destroy:
@@ -23,18 +23,14 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false # Important: Prevents output formatting issues during destroy
 
-      # 1. Initialize
       - name: Terraform Init
-        # Use -reconfigure to ensure it clears any previous partial attempts
-        run: terraform init -backend-config=backend.conf -input=false -reconfigure
+        run: terraform init -backend-config=backend.conf -reconfigure
 
-      # 2. Plan the Destruction (The Safety Step)
-      # We save the plan to a file named 'tfplan'
-      - name: Terraform Plan Destroy
-        run: terraform plan -destroy -out=tfplan
+      - name: Terraform State List
+        run: terraform state list # Confirms what Terraform sees before it deletes
 
-      # 3. Execute the Destruction
-      # We apply the EXACT plan we just created
-      - name: Terraform Apply Destroy
-        run: terraform apply -auto-approve tfplan
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve
