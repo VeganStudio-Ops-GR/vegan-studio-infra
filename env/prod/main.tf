@@ -36,7 +36,7 @@ module "secrets" {
 module "s3" {
   source       = "../../modules/s3"
   project_name = var.project_name
-  env          = "prod" # <--- IMPORTANT: "prod"
+  env          = "prod"
 }
 
 module "rds" {
@@ -77,14 +77,42 @@ module "asg" {
   db_endpoint          = module.rds.db_endpoint
 }
 
+# ---------------------------------------------------------
+# 5. GLOBAL DELIVERY LAYER (CloudFront & SSL)
+# ---------------------------------------------------------
+
+# The "Orphaned" resource that caused the error
+resource "aws_acm_certificate" "prod_cert" {
+  provider          = aws.us_east_1
+  domain_name       = "rajdevops.click"
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 module "cdn" {
   source = "../../modules/cdn"
 
+  # Explicitly handing over the providers to fix the error
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
   domain_name         = "rajdevops.click"
-  alb_dns_name        = module.alb.alb_dns_name           # Passes your Prod ALB URL
-  acm_certificate_arn = aws_acm_certificate.prod_cert.arn # Uses the Issued Cert
+  alb_dns_name        = module.alb.alb_dns_name
+  acm_certificate_arn = aws_acm_certificate.prod_cert.arn
 }
 
+# ---------------------------------------------------------
+# 6. OUTPUTS
+# ---------------------------------------------------------
 output "cloudfront_domain_name" {
   value = module.cdn.cloudfront_dns
+}
+
+output "alb_dns_name" {
+  value = module.alb.alb_dns_name
 }
